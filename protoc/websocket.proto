@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "./wsrpc";
+
+message WebSocketSendReq {
+  string platform          = 1;  // customer, admin
+  repeated string to_users = 2;  // 接收者 userid列表
+  string message           = 4;  // 消息内容
+}
+
+message WebSocketSendResp {
+}
+
+message IsOnlineUsersReq {
+  string platform          = 1;  // customer, admin
+  repeated string user_ids = 2;
+}
+
+message IsOnlineUsersResp {
+  repeated string users = 1;
+}
+
+message GetOnlineCountReq {
+  string platform = 1;  // admin,customer
+}
+
+message GetOnlineCountResp {
+  int64 count = 1;
+}
+
+service websocket {
+  // 发送websocket消息
+  rpc webSocketSend(WebSocketSendReq) returns (WebSocketSendResp);
+  // 获取用户是否在线
+  rpc isOnlineUsers(IsOnlineUsersReq) returns (IsOnlineUsersResp);
+  // 获取在线用户数
+  rpc getOnlineCount(GetOnlineCountReq) returns (GetOnlineCountResp);
+}
