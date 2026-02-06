@@ -46,16 +46,6 @@ func (h *HttpRouter) Run() {
 }
 
 func (h *HttpRouter) Register() {
-	//for path := range getHandleList {
-	//	h.handle.Register(path, phttp.MethodGet, h.PrepareCall)
-	//	plog.Info("register", zap.String("path", path), zap.String("method", phttp.MethodGet))
-	//
-	//}
-	//
-	//for path := range postHandleList {
-	//	h.handle.Register(path, phttp.MethodPost, h.PrepareCall)
-	//	plog.Info("register", zap.String("path", path), zap.String("method", phttp.MethodPost))
-	//}
 	parseGroup()
 	for path, v := range routesList {
 		h.handle.Register(path, v.Method, h.PrepareCall)
@@ -83,30 +73,6 @@ func (h *HttpRouter) PrepareCall(ctx *fasthttp.RequestCtx) {
 		}
 		routesList[path].Handle(ctx)
 	}
-
-	/*
-		if method == "GET" {
-			if _, ok := getHandleList[path]; ok {
-				if getHandleList[path].Filter {
-					if outputCode := h.Filter(ctx); outputCode != code.Success {
-						internal.OutputError(ctx, outputCode)
-						return
-					}
-				}
-				getHandleList[path].Handle(ctx)
-			}
-		} else if method == "POST" {
-			if _, ok := postHandleList[path]; ok {
-				if postHandleList[path].Filter {
-					if outputCode := h.Filter(ctx); outputCode != code.Success {
-						internal.OutputError(ctx, outputCode)
-						return
-					}
-				}
-				postHandleList[path].Handle(ctx)
-			}
-		}
-	*/
 }
 
 func (h *HttpRouter) options(ctx *fasthttp.RequestCtx) {

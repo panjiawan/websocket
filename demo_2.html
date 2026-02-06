@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nchan WebSocket Subscriber Demo</title>
+</head>
+<body>
+<h2>Nchan WebSocket 订阅测试</h2>
+<div id="log"></div>
+<script>
+    const platform="app"
+    const userId = "10000";  // 订阅频道名称
+    const ws = new WebSocket(`ws://localhost:8080/sub/${platform}/${userId}`);
+
+    const log= document.getElementById("log");
+
+    function write(message) {
+        const p= document.createElement("p");
+        p.innerText = message;
+       log.appendChild(p);
+    }
+
+    ws.onopen = function () {
+        write("WebSocket 已连接");
+    };
+    ws.onmessage = function (event) {
+        write("收到消息："+event.data);
+    };
+
+    ws.onclose = function () {
+        write("WebSocket 已断开");
+    };
+    ws.onerror = function () {
+        write("WebSocket 发生错误");
+    };
+
+</script>
+</body>
+</html>
