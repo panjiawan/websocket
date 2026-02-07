@@ -6,3 +6,5 @@ httpsKeyFile: ""
 httpPort: 8881
 rateLimitPerSec: 500
 rateLimitCapacity: 2000
+wsHost: "http://127.0.0.1:8080"
+maxGoCount: 10

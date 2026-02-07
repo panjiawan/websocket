@@ -3,6 +3,7 @@ package boot
 import (
 	"github.com/panjiawan/go-lib/pkg/plog"
 	"websocket/conf"
+	"websocket/service/control"
 	"websocket/service/dao"
 	"websocket/service/router"
 )
@@ -31,6 +32,10 @@ func Start(etcPath string, logPath string) {
 	plog.Info("conf started")
 	dao.Run()
 	plog.Info("model started")
+	/////////////////////
+	control.Run()
+	defer control.Stop()
+	////////////////////
 	route := router.New(confHandle.GetHttpConf())
 	route.Run()
 }

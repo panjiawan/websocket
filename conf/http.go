@@ -14,6 +14,8 @@ type HttpConf struct {
 	HttpPort          int    `yaml:"httpPort"`
 	RateLimitPerSec   int    `yaml:"rateLimitPerSec"`
 	RateLimitCapacity int    `yaml:"rateLimitCapacity"`
+	WSHost            string `yaml:"wsHost"`     // nginx + nchan 的一个发布端点
+	MaxGoCount        int    `yaml:"maxGoCount"` // 一个platform的最大处理消息发送的协程数量
 }
 
 func (s *Handle) LoadHttp() {
