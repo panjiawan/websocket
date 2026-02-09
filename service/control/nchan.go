@@ -19,7 +19,6 @@ func NChanEvent(ctx context.Context, req *dto.NChanEventDto) {
 		plog.Info("NChanEvent unknown event type", zap.Any("req", req))
 	}
 	if err != nil {
-
 		plog.Error("NChanEvent error", zap.Error(err), zap.Any("req", req))
 	}
 }

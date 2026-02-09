@@ -25,11 +25,13 @@ func (s *Service) heartbeat() {
 			if err != nil {
 				plog.Error("heartbeat CleanOfflineNodes error", zap.Error(err))
 			}
+			plog.Debug("heartbeat CleanOfflineNodes Success..")
 		case <-heartbeatTicker.C:
 			err := s.session.NodeHeartbeat(ctx)
 			if err != nil {
 				plog.Error("heartbeat NodeHeartbeat error", zap.Error(err))
 			}
+			plog.Debug("NodeHeartbeat Success..")
 		}
 	}
 }

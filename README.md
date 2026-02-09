@@ -82,6 +82,7 @@ sudo /usr/local/openresty/nginx/sbin/nginx -t
 # 如果输出没有报错，说明模块加载正常
 sudo /usr/local/openresty/nginx/sbin/nginx -c  /usr/local/openresty/nginx/conf/nginx.conf
 # 启动成功
+sudo /usr/local/openresty/nginx/sbin/nginx -c /mnt/d/htdocs/github.com/panjiawan/websocket/nginx.conf
 ````
 ###### 2. 启动一个 Nchan WebSocket Demo 服务
 1. nginx.conf 配置内容如下：

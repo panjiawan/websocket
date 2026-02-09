@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>nchan WebSocket 订阅 Demo</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 40px; }
+        h1 { font-size: 24px; margin-bottom: 20px; }
+        .box { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); max-width: 480px; }
+        .row { margin-bottom: 16px; }
+        label { display: block; font-size: 14px; color: #666; margin-bottom: 4px; }
+        input { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        .btn-primary { background: #1890ff; color: #fff; }
+        .btn-secondary { background: #52c41a; color: #fff; margin-left: 8px; }
+        .btn-danger { background: #ff4d4f; color: #fff; margin-left: 8px; }
+        #status { margin-top: 16px; font-size: 14px; }
+        #log { margin-top: 16px; background: #fafafa; border: 1px solid #e6e6e6; border-radius: 4px; padding: 12px; height: 200px; overflow: auto; font-size: 13px; color: #333; }
+        .msg { margin: 4px 0; }
+        .msg-time { color: #999; margin-right: 8px; }
+        .msg-info { color: #333; }
+        .msg-success { color: #52c41a; }
+        .msg-warning { color: #faad14; }
+        .msg-error { color: #ff4d4f; }
+        .send-row { display: flex; gap: 8px; margin-top: 24px; }
+        .send-row input { flex: 1; }
+        .send-row button { flex-shrink: 0; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>nchan WebSocket 订阅 Demo</h1>
+    <div class="row">
+        <label>用户 UID</label>
+        <input id="uid" placeholder="10086" value="10086" />
+    </div>
+    <div class="row">
+        <label>平台（对应 nginx 正则）</label>
+        <input id="platform" placeholder="customer" value="customer" />
+    </div>
+    <div class="row">
+        <button id="connectBtn" class="btn-primary">连接</button>
+        <button id="disconnectBtn" class="btn-danger" disabled>断开</button>
+    </div>
+
+    <!-- 添加消息发送区域 -->
+    <div class="send-row">
+        <input id="messageInput" placeholder="输入要发送的消息..." disabled />
+        <button id="sendBtn" class="btn-secondary" disabled>发送</button>
+    </div>
+
+    <div id="status">状态：<span id="statusText">未连接</span></div>
+    <div id="log"></div>
+</div>
+
+<script>
+    const uidInp = document.getElementById('uid');
+    const platformInp = document.getElementById('platform');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusText = document.getElementById('statusText');
+    const logDiv = document.getElementById('log');
+
+    let ws = null;
+    let pingIntervalTimer = null;   // 发送ping的定时器
+    let pongTimeoutTimer = null;    // 等待pong响应的超时定时器
+    let reconnectTimer = null;      // 重连定时器
+    let reconnectAttempts = 0;      // 当前重连尝试次数
+    const maxReconnectAttempts = 5; // 最大重连尝试次数
+    const baseReconnectDelay = 1000; // 重连基础延迟时间(毫秒)
+
+    function print(msg, type = 'info') {
+        console.log(msg)
+        // const p = document.createElement('div');
+        // p.className = `msg msg-${type}`;
+        // p.innerHTML = `<span class="msg-time">${new Date().toLocaleTimeString()}</span> ${msg}`;
+        // logDiv.appendChild(p);
+        // logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // 启动心跳检测
+    function startHeartbeat() {
+        stopHeartbeat(); // 先清理可能存在的旧定时器
+        // 心跳逻辑保持不变...
+    }
+
+    // 停止心跳检测和超时检查
+    function stopHeartbeat() {
+        if (pingIntervalTimer) {
+            clearInterval(pingIntervalTimer);
+            pingIntervalTimer = null;
+        }
+        if (pongTimeoutTimer) {
+            clearTimeout(pongTimeoutTimer);
+            pongTimeoutTimer = null;
+        }
+    }
+
+    // 停止重连尝试
+    function stopReconnect() {
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+        }
+        reconnectAttempts = 0; // 重置重连尝试次数
+    }
+
+    // 初始化重连机制
+    function scheduleReconnect() {
+        stopReconnect(); // 防止多个重连定时器同时存在
+
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            print(`❌ 已达到最大重连次数 (${maxReconnectAttempts})，停止重连。`, 'error');
+            statusText.textContent = '连接失败（已达最大重试次数）';
+            return;
+        }
+
+        // 使用指数退避算法计算下次重连的延迟
+        const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
+        reconnectAttempts++;
+
+        print(`⏰ 将在 ${delay/1000} 秒后尝试第 ${reconnectAttempts} 次重连...`, 'warning');
+        statusText.textContent = `等待重连 (${reconnectAttempts}/${maxReconnectAttempts})`;
+
+        reconnectTimer = setTimeout(() => {
+            print(`🔄 开始第 ${reconnectAttempts} 次重连尝试...`, 'info');
+            connect();
+        }, delay);
+    }
+
+    // 发送消息到服务端
+    function sendMessage() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            print('❌ 连接未建立，无法发送消息', 'error');
+            return;
+        }
+
+        const message = messageInput.value.trim();
+        if (!message) {
+            print('⚠️ 请输入要发送的消息', 'warning');
+            return;
+        }
+
+        try {
+            // 尝试发送消息
+            ws.send(message);
+            print(`📤 >>> 发送消息: ${message}`, 'success');
+            messageInput.value = ''; // 清空输入框
+        } catch (error) {
+            print(`❌ 发送失败: ${error.message}`, 'error');
+        }
+    }
+
+    // 监听输入框回车键发送
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    function connect() {
+        const uid = uidInp.value.trim();
+        const platform = platformInp.value.trim();
+        if (!uid || !platform) return alert('请输入 UID 和平台');
+
+        // 与 nginx 正则匹配：/sub/<platform>_<uid>
+        const url = `ws://localhost:8080/sub/${platform}/${uid}`;
+        // const url = `ws://192.168.1.17/meta_events/all`;
+        print(`🌐 正在连接 ${url} ...`, 'info');
+        statusText.textContent = '连接中...';
+        connectBtn.disabled = true;
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+
+        // 先清除可能存在的旧连接和心跳
+        if (ws) {
+            ws.close();
+        }
+        stopHeartbeat();
+        stopReconnect();
+
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+            statusText.textContent = '已连接';
+            disconnectBtn.disabled = false;
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            print('✅ WebSocket 连接成功', 'success');
+            reconnectAttempts = 0; // 连接成功时重置重连尝试次数
+            startHeartbeat(); // 连接成功后再启动心跳
+        };
+
+        ws.onmessage = (e) => {
+            try {
+                // 尝试解析JSON消息
+                const data = JSON.parse(e.data);
+
+                if (data.type === 'pong') {
+                    // 收到心跳响应
+                    print('✅ <<< 收到心跳响应 pong', 'success');
+                    if (pongTimeoutTimer) {
+                        clearTimeout(pongTimeoutTimer);
+                        pongTimeoutTimer = null;
+                    }
+                } else {
+                    // 其他业务消息
+                    print(`📨 <<< 收到消息: ${e.data}`, 'info');
+                }
+            } catch (err) {
+                // 非JSON消息或解析失败
+                print(`📨 <<< 收到消息: ${e.data}`, 'info');
+            }
+        };
+
+        ws.onerror = (e) => {
+            print('❌ WebSocket 连接错误', 'error');
+            // onerror 后通常还会触发 onclose
+        };
+
+        ws.onclose = (e) => {
+            statusText.textContent = '未连接';
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            print(`🔌 连接已关闭 (code: ${e.code}, reason: ${e.reason || '无'})`, 'info');
+            stopHeartbeat(); // 连接关闭时停止心跳
+
+            // 如果不是手动断开（比如点击断开按钮），则尝试重连
+            if (e.code !== 1000) { // 1000 通常表示正常关闭
+                scheduleReconnect();
+            } else {
+                print('👋 用户主动断开连接', 'info');
+            }
+        };
+    }
+
+    function disconnect() {
+        // 手动断开时，清除重连逻辑，使用正常关闭代码
+        stopReconnect();
+        if (ws) {
+            ws.close(1000, 'User intentionally disconnected');
+        }
+    }
+
+    connectBtn.onclick = connect;
+    disconnectBtn.onclick = disconnect;
+    sendBtn.onclick = sendMessage;
+
+    // 页面关闭前主动关闭WebSocket连接
+    window.addEventListener('beforeunload', () => {
+        if (ws) {
+            ws.close(1000, 'Page closed');
+        }
+    });
+</script>
+</body>
+</html>

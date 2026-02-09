@@ -22,7 +22,6 @@ func Start(etcPath string, logPath string) {
 	// load conf
 	confHandle := conf.New(etcPath)
 	confHandle.Run()
-
 	// start log
 	plog.Start(logPath, "websocket_log", confHandle.GetHttpConf().EnableDebug, confHandle.GetHttpConf().EnableStdout)
 

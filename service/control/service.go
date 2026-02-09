@@ -27,9 +27,10 @@ func Run() {
 		exitChn:  make(chan struct{}),
 	}
 
-	// 启动一个心跳线程
+	// 启动一个心跳协程
 	go servicer.heartbeat()
 
+	//启动消费协程
 	for _, v := range defines.PlatformAll {
 		go servicer.consumer.ConsumeMessage(context.TODO(), v)
 	}
