@@ -14,4 +14,6 @@ func init() {
 	groupRoute.Add("online/count", &routerMethod{api.GetOnlineUserCount, phttp.MethodPost, false}) // 获取在线用户数
 
 	groupRoute.Add("send", &routerMethod{api.WebSocketSend, phttp.MethodPost, false}) // 发布websocket消息
+
+	groupRoute.Add("ws_send", &routerMethod{api.WSSocketSend, phttp.MethodPost, false}) // WS连接发送的消息
 }

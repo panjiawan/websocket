@@ -32,3 +32,12 @@ func GetOnlineUserCount(ctx context.Context, req *dto.GetOnlineUserCountReq) (in
 	}
 	return count, nil
 }
+
+func GetPing(ctx context.Context) error {
+	err := servicer.session.GetPing(ctx)
+	if err != nil {
+		plog.Error("GetPing GetPing error", zap.Error(err))
+		return err
+	}
+	return nil
+}

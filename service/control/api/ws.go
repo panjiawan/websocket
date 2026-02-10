@@ -108,3 +108,35 @@ func WebSocketSend(ctx *fasthttp.RequestCtx) {
 
 	internal.OutputSuccess(ctx)
 }
+
+func GetPing(ctx *fasthttp.RequestCtx) {
+	err := control.GetPing(ctx)
+	plog.Debug("GetPing。。")
+	if err != nil {
+		plog.Error("GetPing error", zap.Error(err))
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		internal.OutputError(ctx, code.ErrorServer)
+		return
+	}
+
+	internal.OutputSuccess(ctx)
+}
+
+func WSSocketSend(ctx *fasthttp.RequestCtx) {
+	req := &dto.WebSocketSendReq{}
+	body := ctx.PostBody()
+	plog.Debug("WSSocketSend", zap.Any("body", string(body)))
+	if err := json.Unmarshal(body, &req); err != nil {
+		plog.Error("WebSocketSend json.Unmarshal error", zap.Error(err), zap.Any("body", string(body)))
+		internal.OutputError(ctx, code.ErrorParameter)
+		return
+	}
+	err := control.SendMessage(ctx, req)
+	if err != nil {
+		plog.Error("WebSocketSend error", zap.Error(err), zap.Any("req", req))
+		internal.OutputError(ctx, code.ErrorServer)
+		return
+	}
+
+	internal.OutputSuccess(ctx)
+}

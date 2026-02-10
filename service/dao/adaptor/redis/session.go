@@ -23,6 +23,7 @@ type ISession interface {
 	NodeHeartbeat(ctx context.Context) error
 	CleanSelfNode(ctx context.Context) error
 	CleanOfflineNode(ctx context.Context) error
+	GetPing(ctx context.Context) error
 }
 
 type Session struct {
@@ -144,4 +145,8 @@ func (s *Session) CleanOfflineNode(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (s *Session) GetPing(ctx context.Context) error {
+	return s.client.Ping(ctx).Err()
 }

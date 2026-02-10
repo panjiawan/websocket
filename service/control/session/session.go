@@ -105,3 +105,7 @@ func (s *Session) IsOnline(ctx context.Context, platform string, userIDs []strin
 func (s *Session) GetOnlineCount(ctx context.Context, platform string) (int64, error) {
 	return s.sessionDrive.GetOnlineCount(ctx, platform)
 }
+
+func (s *Session) GetPing(ctx context.Context) error {
+	return s.sessionDrive.GetPing(ctx)
+}
