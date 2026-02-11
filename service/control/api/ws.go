@@ -105,6 +105,7 @@ func WebSocketSend(ctx *fasthttp.RequestCtx) {
 		internal.OutputError(ctx, code.ErrorServer)
 		return
 	}
+	plog.Debug("WebSocketSend", zap.Any("req", req))
 
 	internal.OutputSuccess(ctx)
 }

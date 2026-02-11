@@ -39,6 +39,7 @@ func Start(etcPath string, logPath string) {
 
 	//启动grpc服务
 	grpc_server.Run()
+	plog.Info("grpc started")
 
 	route := router.New(confHandle.GetHttpConf())
 	route.Run()

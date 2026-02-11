@@ -58,6 +58,7 @@ func (h *HttpRouter) Register() {
 
 	parseGroup()
 	for path, v := range routesList {
+		h.handle.Register(path, phttp.MethodOptions, h.options) // 跨域处理
 		h.handle.Register(path, v.Method, h.PrepareCall)
 		plog.Info("register", zap.String("path", path), zap.String("method", v.Method))
 	}
@@ -70,7 +71,6 @@ func (h *HttpRouter) PrepareCall(ctx *fasthttp.RequestCtx) {
 		}
 	}()
 
-	h.options(ctx)
 	path := string(ctx.URI().Path())
 	method := string(ctx.Request.Header.Method())
 

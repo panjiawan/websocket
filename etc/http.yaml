@@ -3,8 +3,8 @@ enableStdout: TRUE
 https: FALSE
 httpsCertFile: ""
 httpsKeyFile: ""
-httpPort: 8881
-grpcPort: 8871
+httpPort: 8882
+grpcPort: 8872
 rateLimitPerSec: 500
 rateLimitCapacity: 2000
 wsHost: "http://127.0.0.1:8080"

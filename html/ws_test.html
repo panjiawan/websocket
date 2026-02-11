@@ -492,7 +492,7 @@
         // handleReceivedMessage(simulatedMessage, toUser);
 
         try {
-            const response = await fetch('http://localhost:8090/api/ws/publish', {
+            const response = await fetch('http://localhost:8881/api/ws/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -522,7 +522,7 @@
         }
 
         // 与 nginx 正则匹配：/sub/<platform>_<uid>
-        const url = `ws://localhost/sub/${platform}/${userId}`;
+        const url = `ws://localhost:8080/sub/${platform}/${userId}`;
         print(`🌐 用户 ${userId} 正在连接 ${url} ...`, 'info');
 
         // 更新连接状态

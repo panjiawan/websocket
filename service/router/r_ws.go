@@ -16,4 +16,6 @@ func init() {
 	groupRoute.Add("send", &routerMethod{api.WebSocketSend, phttp.MethodPost, false}) // 发布websocket消息
 
 	groupRoute.Add("ws_send", &routerMethod{api.WSSocketSend, phttp.MethodPost, false}) // WS连接发送的消息
+
+	groupRoute.Add("grpc_send", &routerMethod{api.GrpcSend, phttp.MethodPost, false}) // 发布websocket消息
 }
