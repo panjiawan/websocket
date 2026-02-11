@@ -5,6 +5,7 @@ import (
 	"websocket/conf"
 	"websocket/service/control"
 	"websocket/service/dao"
+	"websocket/service/grpc_server"
 	"websocket/service/router"
 )
 
@@ -35,6 +36,10 @@ func Start(etcPath string, logPath string) {
 	control.Run()
 	defer control.Stop()
 	////////////////////
+
+	//启动grpc服务
+	grpc_server.Run()
+
 	route := router.New(confHandle.GetHttpConf())
 	route.Run()
 }

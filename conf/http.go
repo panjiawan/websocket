@@ -12,6 +12,7 @@ type HttpConf struct {
 	HttpsCertFile     string `yaml:"httpsCertFile"`
 	HttpsKeyFile      string `yaml:"httpsKeyFile"`
 	HttpPort          int    `yaml:"httpPort"`
+	GrpcPort          int    `yaml:"grpcPort"`
 	RateLimitPerSec   int    `yaml:"rateLimitPerSec"`
 	RateLimitCapacity int    `yaml:"rateLimitCapacity"`
 	WSHost            string `yaml:"wsHost"`     // nginx + nchan 的一个发布端点

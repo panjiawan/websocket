@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>WebSocket消息推送测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            height: calc(100vh - 40px);
+            gap: 20px;
+        }
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .right-panel {
+            width: 300px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .control-section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+            margin-bottom: 16px;
+        }
+        .control-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        .row {
+            margin-bottom: 12px;
+        }
+        .row:last-child {
+            margin-bottom: 0;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-primary { background: #1890ff; color: #fff; }
+        .btn-danger { background: #ff4d4f; color: #fff; margin-left: 8px; }
+        .btn-success { background: #52c41a; color: #fff; }
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .status-bar {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .chat-boxes-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            overflow-y: auto;
+            padding: 0 0 16px 0;
+            min-height: 400px;
+        }
+        .chat-box {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+        }
+        .chat-header {
+            background: #fafafa;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e6e6e6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chat-title {
+            font-weight: 500;
+            color: #333;
+            flex: 1;
+        }
+        .connection-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            color: #666;
+        }
+        .connection-status.connected {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .connection-status.connecting {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+        .chat-box .chat-messages {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            background: #fff;
+            min-height: 200px;
+        }
+        .message {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.self {
+            justify-content: flex-end;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            word-wrap: break-word;
+        }
+        .message.self .message-content {
+            background: #1890ff;
+            color: #fff;
+        }
+        .message.other .message-content {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .message.system .message-content {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            max-width: 80%;
+        }
+        .message-user {
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #666;
+        }
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .online-users {
+            margin-bottom: 16px;
+        }
+        .online-users h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        .user-item {
+            background: #fafafa;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .user-id {
+            font-weight: 500;
+            color: #333;
+        }
+        .user-status {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .status-online {
+            background: #52c41a;
+        }
+        .status-offline {
+            background: #d9d9d9;
+        }
+        .user-controls {
+            display: flex;
+            gap: 8px;
+        }
+        .user-controls input {
+            flex: 1;
+        }
+        .log {
+            margin-top: 16px;
+            background: #fafafa;
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            padding: 12px;
+            height: 120px;
+            overflow: auto;
+            font-size: 12px;
+            color: #333;
+        }
+        .msg {
+            margin: 2px 0;
+        }
+        .msg-time {
+            color: #999;
+            margin-right: 8px;
+            font-size: 11px;
+        }
+        .msg-info { color: #333; }
+        .msg-success { color: #52c41a; }
+        .msg-warning { color: #faad14; }
+        .msg-error { color: #ff4d4f; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-panel">
+        <div class="status-bar">
+            WebSocket 聊天系统
+        </div>
+
+
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <div class="right-panel">
+        <div class="online-users">
+            <h3>在线用户</h3>
+            <div id="onlineUsersList">
+                <!-- 动态生成在线用户列表 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const logDiv = document.getElementById('log');
+    const onlineUsersListElement = document.getElementById('onlineUsersList');
+
+    // 聊天相关数据
+    let chatHistory = {}; // 存储聊天历史，格式: { userId: [messages] }
+    let webSocketConnections = {}; // 存储多个WebSocket连接，格式: { userId: ws }
+    let onlineUsersList = []; // 从API获取的在线用户列表
+
+    // 默认创建4个聊天框用户
+    const defaultChatUsers = [
+        { uid: '10086', platform: 'customer' },
+        { uid: '10087', platform: 'customer' },
+        { uid: '10088', platform: 'customer' },
+        { uid: '10089', platform: 'customer' }
+    ];
+
+    function print(msg, type = 'info') {
+        const p = document.createElement('div');
+        p.className = `msg msg-${type}`;
+        p.innerHTML = `<span class="msg-time">${new Date().toLocaleTimeString()}</span> ${msg}`;
+        logDiv.appendChild(p);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // 初始化聊天界面
+    function initChatInterface() {
+        // 创建多个独立的聊天框
+        createMultipleChatBoxes();
+
+        // 初始化聊天历史
+        defaultChatUsers.forEach(user => {
+            if (!chatHistory[user.uid]) {
+                chatHistory[user.uid] = [];
+            }
+        });
+    }
+
+    // 创建多个聊天框
+    function createMultipleChatBoxes() {
+        // 查找是否已存在聊天框容器
+        let chatBoxesContainer = document.querySelector('.chat-boxes-container');
+
+        if (chatBoxesContainer) {
+            // 如果已存在，先清空
+            chatBoxesContainer.innerHTML = '';
+        } else {
+            // 创建新的聊天框容器
+            chatBoxesContainer = document.createElement('div');
+            chatBoxesContainer.className = 'chat-boxes-container';
+
+            // 插入到状态栏后面
+            const statusBar = document.querySelector('.status-bar');
+            statusBar.parentNode.insertBefore(chatBoxesContainer, statusBar.nextSibling);
+        }
+
+        // 为每个用户创建独立的聊天框
+        defaultChatUsers.forEach((user, index) => {
+            const chatBox = document.createElement('div');
+            chatBox.className = 'chat-box';
+            chatBox.dataset.userId = user.uid;
+            chatBox.innerHTML = `
+                <div class="chat-header">
+                    <span class="chat-title">用户 ${user.uid}</span>
+                    <span class="connection-status" id="status-${user.uid}">未连接</span>
+                    <button class="btn-small btn-primary" onclick="connectUser('${user.uid}', '${user.platform}')">连接</button>
+                    <button class="btn-small btn-danger" onclick="disconnectUser('${user.uid}')">断开</button>
+                </div>
+                <div class="chat-messages" id="messages-${user.uid}">
+                    <!-- 消息内容 -->
+                </div>
+            `;
+            chatBoxesContainer.appendChild(chatBox);
+        });
+    }
+
+
+
+    // 添加消息到指定用户聊天框的UI
+    function addMessageToUI(msg, userId) {
+        console.log(`尝试添加消息到聊天框 ${userId}:`, msg);
+
+        const messagesContainer = document.getElementById(`messages-${userId}`);
+        if (!messagesContainer) {
+            console.error(`找不到消息容器: messages-${userId}`);
+            return;
+        }
+
+        console.log(`找到消息容器，准备添加消息`);
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${msg.type}`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        let userLabel = '';
+        if (msg.type === 'self') {
+            userLabel = '我自己';
+        } else if (msg.type === 'system') {
+            userLabel = '系统消息';
+        } else {
+            userLabel = `用户 ${userId}`;
+        }
+
+        contentDiv.innerHTML = `
+            ${msg.type !== 'system' ? `<div class="message-user">${userLabel}</div>` : ''}
+            <div class="message-text">${msg.event_msg}</div>
+            <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+        `;
+
+        messageDiv.appendChild(contentDiv);
+        messagesContainer.appendChild(messageDiv);
+
+        console.log(`消息已添加到聊天框 ${userId}`);
+
+        // 滚动到底部
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // 处理收到的消息
+    function handleReceivedMessage(data, userId) {
+        console.log(`处理用户 ${userId} 的消息:`, data);
+
+        const message = {
+            ...data,
+            timestamp: Date.now(),
+            type: data.event_type === 'system' ? 'system' : 'other'
+        };
+
+        // 存储消息历史
+        if (!chatHistory[userId]) {
+            chatHistory[userId] = [];
+        }
+        chatHistory[userId].push(message);
+
+        // 只显示在对应的聊天框中
+        addMessageToUI(message, userId);
+
+        print(`📨 用户 ${userId} 收到消息: ${data.event_msg}`, 'info');
+    }
+
+    // 获取在线用户列表
+    async function fetchOnlineUsers() {
+        useMockOnlineUsers();
+    }
+
+    // 使用mock数据
+    function useMockOnlineUsers() {
+        onlineUsersList = [
+            { id: '10086', name: '用户10086' },
+            { id: '10087', name: '用户10087' },
+            { id: '10088', name: '用户10088' },
+            { id: '10089', name: '用户10089' }
+        ];
+        updateOnlineUsersList();
+    }
+
+    // 更新在线用户列表UI
+    function updateOnlineUsersList() {
+        const container = document.getElementById('onlineUsersList');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (onlineUsersList.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #999;">暂无在线用户</p>';
+            return;
+        }
+
+        onlineUsersList.forEach(user => {
+            const userDiv = document.createElement('div');
+            userDiv.className = 'user-item';
+
+            userDiv.innerHTML = `
+                <div class="user-header">
+                    <span class="user-id">${user.name} (ID: ${user.id})</span>
+                    <div class="user-status">
+                        <span class="status-dot status-online"></span>
+                        <span>在线</span>
+                    </div>
+                </div>
+                <div class="user-controls">
+                    <input type="text" id="msgInput-${user.id}" placeholder="输入消息..." />
+                    <button class="btn-success btn-small" onclick="sendMessageToUser('${user.id}')">发送</button>
+                </div>
+            `;
+
+            container.appendChild(userDiv);
+        });
+    }
+
+    // 发送消息给指定用户（模拟系统发送）
+    async function sendMessageToUser(toUser) {
+        const msgInput = document.getElementById(`msgInput-${toUser}`);
+        const message = msgInput.value.trim();
+
+        if (!message) return;
+
+        print(`📤 模拟系统发送消息给用户 ${toUser}: ${message}`, 'info');
+
+        // 立即清空输入框
+        msgInput.value = '';
+
+        // 先在本地显示消息（用于测试）
+        const simulatedMessage = {
+            event_type: 'system',
+            event_msg: message,
+            from_user: null,
+            to_users: toUser
+        };
+        console.log(`模拟消息发送给用户 ${toUser}:`, simulatedMessage);
+        // handleReceivedMessage(simulatedMessage, toUser);
+
+        try {
+            const response = await fetch('http://localhost:8090/api/ws/publish', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    platform: "customer",
+                    to_users: [toUser],
+                    message: message
+                })
+            });
+
+            if (response.ok) {
+                print(`✅ 消息发送成功: ${toUser} - ${message}`, 'success');
+            } else {
+                print(`❌ 消息发送失败: ${response.statusText}`, 'error');
+            }
+        } catch (error) {
+            print(`❌ 发送请求失败: ${error.message}`, 'error');
+        }
+    }
+
+    // 连接指定用户
+    function connectUser(userId, platform) {
+        if (webSocketConnections[userId]) {
+            print(`用户 ${userId} 已经连接`, 'warning');
+            return;
+        }
+
+        // 与 nginx 正则匹配：/sub/<platform>_<uid>
+        const url = `ws://localhost/sub/${platform}/${userId}`;
+        print(`🌐 用户 ${userId} 正在连接 ${url} ...`, 'info');
+
+        // 更新连接状态
+        const statusElement = document.getElementById(`status-${userId}`);
+        if (statusElement) {
+            statusElement.textContent = '连接中...';
+            statusElement.className = 'connection-status connecting';
+        }
+
+        const ws = new WebSocket(url);
+        webSocketConnections[userId] = ws;
+
+        ws.onopen = () => {
+            print(`✅ 用户 ${userId} WebSocket 连接成功`, 'success');
+
+            // 更新连接状态
+            const statusElement = document.getElementById(`status-${userId}`);
+            if (statusElement) {
+                statusElement.textContent = '已连接';
+                statusElement.className = 'connection-status connected';
+            }
+
+            // 添加连接成功消息
+            const connectMsg = {
+                event_type: 'system',
+                event_msg: `用户 ${userId} 已连接`,
+                from_user: null,
+                to_user: userId
+            };
+            handleReceivedMessage(connectMsg, userId);
+        };
+
+        ws.onmessage = (e) => {
+            try {
+                // 尝试解析JSON消息
+                const data = JSON.parse(e.data);
+                console.log(`用户 ${userId} 收到的原始数据:`, data);
+
+                // 确保消息有正确的字段
+                const processedData = {
+                    event_type: data.event_type || 'message',
+                    event_msg: data.event_msg || data.message || JSON.stringify(data),
+                    from_user: data.from_user || data.from,
+                    to_user: data.to_user || data.to || userId
+                };
+
+                handleReceivedMessage(processedData, userId);
+            } catch (err) {
+                // 非JSON消息或解析失败
+                print(`📨 用户 ${userId} 收到非JSON消息: ${e.data}`, 'info');
+                // 尝试作为普通文本处理
+                const textData = {
+                    event_type: 'message',
+                    event_msg: e.data,
+                    from_user: null,
+                    to_user: userId
+                };
+                handleReceivedMessage(textData, userId);
+            }
+        };
+
+        ws.onerror = (e) => {
+            print(`❌ 用户 ${userId} WebSocket 连接错误`, 'error');
+        };
+
+        ws.onclose = (e) => {
+            print(`🔌 用户 ${userId} 连接已关闭 (code: ${e.code}, reason: ${e.reason || '无'})`, 'info');
+
+            // 更新连接状态
+            const statusElement = document.getElementById(`status-${userId}`);
+            if (statusElement) {
+                statusElement.textContent = '未连接';
+                statusElement.className = 'connection-status';
+            }
+
+            // 清理连接
+            delete webSocketConnections[userId];
+
+            // 添加断开连接消息
+            const disconnectMsg = {
+                event_type: 'system',
+                event_msg: `用户 ${userId} 连接已断开`,
+                from_user: null,
+                to_user: userId
+            };
+            handleReceivedMessage(disconnectMsg, userId);
+        };
+    }
+
+    // 断开指定用户连接
+    function disconnectUser(userId) {
+        if (webSocketConnections[userId]) {
+            webSocketConnections[userId].close(1000, 'User disconnected');
+            delete webSocketConnections[userId];
+            print(`👋 用户 ${userId} 主动断开连接`, 'info');
+        }
+    }
+
+    // 连接所有默认用户
+    function connectAllUsers() {
+        defaultChatUsers.forEach(user => {
+            connectUser(user.uid, user.platform);
+        });
+    }
+
+    // 页面加载时初始化所有内容
+    window.addEventListener('load', () => {
+        initChatInterface();
+        useMockOnlineUsers();
+        connectAllUsers();
+    });
+
+    // 页面关闭前主动关闭所有WebSocket连接
+    window.addEventListener('beforeunload', () => {
+        Object.keys(webSocketConnections).forEach(userId => {
+            if (webSocketConnections[userId]) {
+                webSocketConnections[userId].close(1000, 'Page closed');
+            }
+        });
+    });
+</script>
+</body>
+</html>

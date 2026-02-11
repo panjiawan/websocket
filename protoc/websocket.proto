@@ -1,18 +1,18 @@
 syntax = "proto3";
 
-option go_package = "./wsrpc";
+option go_package = "./pb";
 
 message WebSocketSendReq {
-  string platform          = 1;  // customer, admin
+  string platform          = 1;  // web, app, customer, admin
   repeated string to_users = 2;  // 接收者 userid列表
-  string message           = 4;  // 消息内容
+  string message           = 3;  // 消息内容
 }
 
 message WebSocketSendResp {
 }
 
 message IsOnlineUsersReq {
-  string platform          = 1;  // customer, admin
+  string platform          = 1;  // web, app, customer, admin
   repeated string user_ids = 2;
 }
 
@@ -21,7 +21,7 @@ message IsOnlineUsersResp {
 }
 
 message GetOnlineCountReq {
-  string platform = 1;  // admin,customer
+  string platform = 1;  // web, app, admin,customer
 }
 
 message GetOnlineCountResp {
